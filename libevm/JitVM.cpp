@@ -165,6 +165,34 @@ void evm_update(evm_env* _opaqueEnv, evm_update_key _key,
 	}
 }
 
+int64_t evm_call(evm_env* _opaqueEnv,
+                 evm_call_kind _kind,
+                 int64_t _gas,
+                 evm_hash160 _address,
+                 evm_uint256 _value,
+                 evm_bytes_view _input,
+                 evm_mutable_bytes_view _output) noexcept
+{
+	auto &env = *reinterpret_cast<ExtVMFace*>(_opaqueEnv);
+
+	CallParameters params;
+
+	params.gas = _gas;
+	params.apparentValue = fromEvmC(_value);
+	params.valueTransfer = params.apparentValue;
+
+	params.senderAddress = env.myAddress;
+	params.receiveAddress = fromEvmC(_address);
+	params.codeAddress = params.receiveAddress;
+	params.data = {reinterpret_cast<byte const*>(_input.bytes), _input.size};
+	params.out = {reinterpret_cast<byte*>(_output.bytes), _output.size};
+	params.onOp = {};
+
+	std::cout << "NN " << (void*) params.data.data() << " " << params.data.size() << " OUT " << (void*) params.out.data() << " " << params.out.size() << "\n";
+
+	env.call(params);
+	return _kind ? 0 : 1;
+}
 
 }
 
@@ -172,7 +200,7 @@ extern "C" void env_call(); // fake declaration for linker symbol stripping work
 
 bytesConstRef JitVM::execImpl(u256& io_gas, ExtVMFace& _ext, OnOpFunc const& _onOp)
 {
-	evmjit::JIT::init(evm_query, evm_update);
+	evmjit::JIT::init(evm_query, evm_update, evm_call);
 
 	auto rejected = false;
 	// TODO: Rejecting transactions with gas limit > 2^63 can be used by attacker to take JIT out of scope

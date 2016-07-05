@@ -43,6 +43,8 @@ extern "C"
 		params.codeAddress = right160(*_codeAddress);
 		params.data = {_inBeg, (size_t)_inSize};
 		params.out = {_outBeg, (size_t)_outSize};
+		std::cout << "IN " << (void*) params.data.data() << " " << params.data.size() << " OUT " << (void*) params.out.data() << " " << params.out.size() << "\n";
+
 		params.onOp = {};
 		// We can have params.receiveAddress == params.codeAddress although it is not a call,
 		// but in this case, the results are the same (see usage of isCall below).
